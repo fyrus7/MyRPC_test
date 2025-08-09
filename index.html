@@ -1,81 +1,186 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Login Page</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Collection System</title>
   <style>
     body {
-      font-family: "Helvetica Neue", Arial, sans-serif;
-      background: #E8ECEF;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
       margin: 0;
+      padding: 0;
     }
     .container {
-      background: #fff;
+      max-width: 800px;
+      margin: 30px auto;
+      background: white;
       padding: 20px;
-      border-radius: 10px;
-      text-align: center;
-      width: 300px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
-    .input-box {
-      width: 100%;
+    h2 {
+      text-align: center;
+    }
+    input, button {
       padding: 10px;
-      margin: 10px 0;
       font-size: 16px;
     }
-    .submit-button {
-      width: 100%;
-      padding: 10px;
-      background: #455A64;
+    input {
+      width: 70%;
+      margin-right: 10px;
+    }
+    button {
+      background: #4CAF50;
       color: white;
       border: none;
-      border-radius: 5px;
       cursor: pointer;
     }
-    .submit-button:hover { background: #1C313A; }
-    #error-message { color: red; margin-top: 10px; }
+    button:hover {
+      background: #45a049;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+    th, td {
+      padding: 8px;
+      text-align: center;
+    }
+    .status-box {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 4px;
+      display: none;
+    }
+    .status-success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .status-error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <img src="https://app.iamfyrus.com/media/flogoblack2.png" width="200"><br><br>
-    <input type="password" id="pwd" class="input-box" placeholder="Enter Password">
-    <button class="submit-button" onclick="validateLogin()">Login</button>
-    <div id="error-message"></div>
+
+<div class="container">
+  <h2>Race Kit Collection</h2>
+
+  <div>
+    <input type="text" id="searchInput" placeholder="Enter Reg ID / IC No / BIB">
+    <button onclick="searchData()">Search</button>
   </div>
 
-  <script>
-    async function validateLogin() {
-      const password = document.getElementById('pwd').value.trim();
-      const errorMessage = document.getElementById('error-message');
-      errorMessage.textContent = "";
+  <div id="statusBox" class="status-box"></div>
 
-      if (!password) {
-        errorMessage.textContent = "Please enter your password.";
-        return;
-      }
+  <table id="resultTable" style="display:none;">
+    <thead>
+      <tr>
+        <th>Team</th>
+        <th>Reg ID</th>
+        <th>IC No</th>
+        <th>Name</th>
+        <th>BIB</th>
+        <th>Size</th>
+        <th>Status</th>
+        <th>Date/Time</th>
+        <th>Serve by</th>
+        <th>On Behalf</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="resultBody"></tbody>
+  </table>
+</div>
 
-      // Query table users
-      const { data, error } = await supabase
-        .from('users')
-        .select('profile')
-        .eq('password', password) // ⚠️ In production, hash password!
-        .single();
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = "https://xxxx.supabase.co"; // Ganti dengan URL projek
+  const SUPABASE_ANON_KEY = "public-anon-key"; // Ganti dengan anon key
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-      if (error || !data) {
-        errorMessage.textContent = "Wrong Password";
-      } else {
-        localStorage.setItem('userProfile', data.profile);
-        window.location.href = "index.html";
-      }
+  async function searchData() {
+    const keyword = document.getElementById("searchInput").value.trim();
+    if (!keyword) return showStatus("Please enter a search keyword", "error");
+
+    const { data, error } = await supabaseClient
+      .from("collection")
+      .select("*")
+      .or(`reg_id.eq.${keyword},ic_no.eq.${keyword},bib.eq.${keyword}`);
+
+    if (error) {
+      console.error(error);
+      return showStatus("Error fetching data", "error");
     }
-  </script>
+
+    if (!data.length) {
+      document.getElementById("resultTable").style.display = "none";
+      return showStatus("No record found", "error");
+    }
+
+    renderResult(data);
+  }
+
+  function renderResult(rows) {
+    const tbody = document.getElementById("resultBody");
+    tbody.innerHTML = "";
+    rows.forEach(row => {
+      tbody.innerHTML += `
+        <tr>
+          <td>${row.team}</td>
+          <td>${row.reg_id}</td>
+          <td>${row.ic_no}</td>
+          <td>${row.name}</td>
+          <td>${row.bib}</td>
+          <td>${row.size}</td>
+          <td>${row.status}</td>
+          <td>${row.datetime || ""}</td>
+          <td>${row.serve_by || ""}</td>
+          <td>${row.on_behalf || ""}</td>
+          <td>
+            ${row.status === "Collected" ? "" : `<button onclick="markCollected(${row.id})">Mark Collected</button>`}
+          </td>
+        </tr>
+      `;
+    });
+    document.getElementById("resultTable").style.display = "table";
+  }
+
+  async function markCollected(id) {
+    const user = JSON.parse(localStorage.getItem("user"));
+    const serveBy = user ? user.email : "Unknown";
+
+    const { error } = await supabaseClient
+      .from("collection")
+      .update({
+        status: "Collected",
+        datetime: new Date().toISOString(),
+        serve_by: serveBy
+      })
+      .eq("id", id);
+
+    if (error) {
+      console.error(error);
+      return showStatus("Failed to update status", "error");
+    }
+
+    showStatus("Status updated to Collected", "success");
+    searchData(); // refresh table
+  }
+
+  function showStatus(message, type) {
+    const box = document.getElementById("statusBox");
+    box.textContent = message;
+    box.className = `status-box ${type === "success" ? "status-success" : "status-error"}`;
+    box.style.display = "block";
+  }
+</script>
+
 </body>
 </html>
