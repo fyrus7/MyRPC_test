@@ -1,186 +1,84 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Collection System</title>
+  <title>Login Page</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      margin: 0;
-      padding: 0;
+      font-family: "Helvetica Neue", sans-serif, Arial;
+      background-color: #E8ECEF;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
     }
     .container {
-      max-width: 800px;
-      margin: 30px auto;
       background: white;
       padding: 20px;
       border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    h2 {
+      width: 300px;
       text-align: center;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    input, button {
+    .input-box {
+      width: 90%;
       padding: 10px;
-      font-size: 16px;
+      margin: 10px 0;
+      font-size: 14px;
     }
-    input {
-      width: 70%;
-      margin-right: 10px;
-    }
-    button {
-      background: #4CAF50;
+    .submit-button {
+      background: #455A64;
       color: white;
       border: none;
+      padding: 8px 16px;
       cursor: pointer;
-    }
-    button:hover {
-      background: #45a049;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    table, th, td {
-      border: 1px solid #ccc;
-    }
-    th, td {
-      padding: 8px;
-      text-align: center;
-    }
-    .status-box {
-      margin-top: 15px;
-      padding: 10px;
       border-radius: 4px;
-      display: none;
     }
-    .status-success {
-      background-color: #d4edda;
-      color: #155724;
-    }
-    .status-error {
-      background-color: #f8d7da;
-      color: #721c24;
-    }
+    .submit-button:hover { background: #1C313A; }
+    #error-message { color: red; font-weight: bold; }
   </style>
 </head>
 <body>
-
-<div class="container">
-  <h2>Race Kit Collection</h2>
-
-  <div>
-    <input type="text" id="searchInput" placeholder="Enter Reg ID / IC No / BIB">
-    <button onclick="searchData()">Search</button>
+  <div class="container">
+    <img src="https://app.iamfyrus.com/media/flogoblack2.png" alt="Logo" width="200"><br><br>
+    <input type="password" id="pwd" class="input-box" placeholder="Enter Password">
+    <span id="toggle-password" class="bi bi-eye-slash" style="cursor:pointer;"></span><br>
+    <button class="submit-button" onclick="validateLogin()">Login</button>
+    <div id="error-message"></div>
   </div>
 
-  <div id="statusBox" class="status-box"></div>
-
-  <table id="resultTable" style="display:none;">
-    <thead>
-      <tr>
-        <th>Team</th>
-        <th>Reg ID</th>
-        <th>IC No</th>
-        <th>Name</th>
-        <th>BIB</th>
-        <th>Size</th>
-        <th>Status</th>
-        <th>Date/Time</th>
-        <th>Serve by</th>
-        <th>On Behalf</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody id="resultBody"></tbody>
-  </table>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-  const SUPABASE_URL = "https://sfscvzzymtblukdupiyn.supabase.co"; // Ganti dengan URL projek
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmc2N2enp5bXRibHVrZHVwaXluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3Mjg2NDAsImV4cCI6MjA3MDMwNDY0MH0.ELGQZckmEnD8QBC4b5rUl9f9l_QKiOykxwQ7DPGOy08"; // Ganti dengan anon key
-  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  async function searchData() {
-    const keyword = document.getElementById("searchInput").value.trim();
-    if (!keyword) return showStatus("Please enter a search keyword", "error");
-
-    const { data, error } = await supabaseClient
-      .from("collection")
-      .select("*")
-      .or(`reg_id.eq.${keyword},ic_no.eq.${keyword},bib.eq.${keyword}`);
-
-    if (error) {
-      console.error(error);
-      return showStatus("Error fetching data", "error");
-    }
-
-    if (!data.length) {
-      document.getElementById("resultTable").style.display = "none";
-      return showStatus("No record found", "error");
-    }
-
-    renderResult(data);
-  }
-
-  function renderResult(rows) {
-    const tbody = document.getElementById("resultBody");
-    tbody.innerHTML = "";
-    rows.forEach(row => {
-      tbody.innerHTML += `
-        <tr>
-          <td>${row.team}</td>
-          <td>${row.reg_id}</td>
-          <td>${row.ic_no}</td>
-          <td>${row.name}</td>
-          <td>${row.bib}</td>
-          <td>${row.size}</td>
-          <td>${row.status}</td>
-          <td>${row.datetime || ""}</td>
-          <td>${row.serve_by || ""}</td>
-          <td>${row.on_behalf || ""}</td>
-          <td>
-            ${row.status === "Collected" ? "" : `<button onclick="markCollected(${row.id})">Mark Collected</button>`}
-          </td>
-        </tr>
-      `;
+  <script>
+    document.getElementById('toggle-password').addEventListener('click', function () {
+      const pwd = document.getElementById('pwd');
+      if (pwd.type === "password") {
+        pwd.type = "text";
+        this.classList.remove('bi-eye-slash');
+        this.classList.add('bi-eye');
+      } else {
+        pwd.type = "password";
+        this.classList.remove('bi-eye');
+        this.classList.add('bi-eye-slash');
+      }
     });
-    document.getElementById("resultTable").style.display = "table";
-  }
 
-  async function markCollected(id) {
-    const user = JSON.parse(localStorage.getItem("user"));
-    const serveBy = user ? user.email : "Unknown";
-
-    const { error } = await supabaseClient
-      .from("collection")
-      .update({
-        status: "Collected",
-        datetime: new Date().toISOString(),
-        serve_by: serveBy
-      })
-      .eq("id", id);
-
-    if (error) {
-      console.error(error);
-      return showStatus("Failed to update status", "error");
+    function validateLogin() {
+      const pwd = document.getElementById('pwd').value;
+      if (!pwd) {
+        document.getElementById('error-message').innerText = "Please enter password";
+        return;
+      }
+      google.script.run.withSuccessHandler(function(res) {
+        if (res.success) {
+          google.script.run.withSuccessHandler(function(html) {
+            document.open();
+            document.write(html);
+            document.close();
+          }).getHomePage();
+        } else {
+          document.getElementById('error-message').innerText = "Wrong password";
+        }
+      }).checkLoginByPassword(pwd);
     }
-
-    showStatus("Status updated to Collected", "success");
-    searchData(); // refresh table
-  }
-
-  function showStatus(message, type) {
-    const box = document.getElementById("statusBox");
-    box.textContent = message;
-    box.className = `status-box ${type === "success" ? "status-success" : "status-error"}`;
-    box.style.display = "block";
-  }
-</script>
-
+  </script>
 </body>
 </html>
